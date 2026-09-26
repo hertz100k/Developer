@@ -1,46 +1,34 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+// مصفوفة لتخزين المنتجات بشكل حي ومباشر لكل الأجهزة
+let products = [];
 
-// قراءة الملفات الثابتة من نفس المجلد أو المجلد الحالي
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// إرسال المنتجات الحالية لأي جهاز يفتح الموقع
+app.get('/api/products', (req, res) => {
+    res.json(products);
+});
+
+// استقبال المنتج الجديد من أي أدمن (سواء من الكمبيوتر أو التليفون) وحفظه للجميع
+app.post('/api/products', (req, res) => {
+    const newProduct = {
+        id: Date.now(),
+        name: req.body.name,
+        price: req.body.price,
+        image: req.body.image
+    };
+    products.push(newProduct);
+    res.redirect('/'); // إعادة توجيه للصفحة الرئيسية ليظهر المنتج فوراً
+});
+
+// تشغيل ملف الـ HTML الأساسي بتاعك (افترضنا إن اسم ملفك index.html)
 app.use(express.static(path.join(__dirname)));
 
-// ملف حفظ المنتجات عشان يظهر لكل الأجهزة
-const DATA_FILE = path.join(__dirname, 'products.json');
-
-// جلب المنتجات
-app.get('/api/products', (req, res) => {
-    try {
-        if (!fs.existsSync(DATA_FILE)) {
-            return res.json([]);
-        }
-        const data = fs.readFileSync(DATA_FILE, 'utf8');
-        res.json(JSON.parse(data || '[]'));
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to read products' });
-    }
-});
-
-// إضافة منتج جديد من أي جهاز
-app.post('/api/products', (req, res) => {
-    try {
-        const newProduct = req.body;
-        let products = [];
-        if (fs.existsSync(DATA_FILE)) {
-            products = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8') || '[]');
-        }
-        products.push(newProduct);
-        fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
-        res.json({ success: true, product: newProduct });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to save product' });
-    }
-});
-
 app.listen(PORT, () => {
-    console.log(`Hertz Server running on port ${PORT}`);
+    console.log(`🚀 نظام شركة هيرتز شغال مباشر على البورت: ${PORT}`);
 });
